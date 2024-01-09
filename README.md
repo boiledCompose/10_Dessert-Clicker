@@ -77,7 +77,60 @@
 <h2>구성 변경사항 살펴보기</h2>
 
 ***구성 변경***은 기기의 상태가 매우 급격하게 변경되어 시스템이 변경 사항을 확인하기 위해 활동을 완전히 종료하고 다시 빌드하면서 발생한다.   
+    
+1. 사용자가 기기 언어를 변경하여 다른 텍스트 방향과 문자열 길이를 수용하도록 전체 레이아웃을 변경해야 할 수 있다.
+2. 사용자가 기기를 토크에 연결하거나 물리적 키보드를 추가하면 앱 레이아웃은 다른 디스플레이 크기나 레이아웃을 활용해야 할 수 있다.
+3. 기기 방향이 변경되어 새 방향에 맞게 레이아웃을 변경해야 할 수 있다.
 
+<br>
+
+<h3>구성 변경으로 인한 onDestroy() 호출</h3>
+
+구성 변경이 발생하면 앱이 완전히 종료된다. 이때 `onPause()`와 `onStop()`에 이어 `onDestroy()`까지 호출된다.   
+
+<br>
+
+<h3>구성 변경으로 인한 데이터 손실</h3>
+
+화면 회전을 할 경우, 액티비티가 완전히 종료되었다가 다시 초기화되면서 모든 데이터들이 기본값으로 초기화된다.   
+
+이러한 상황을 방지하기 위해 컴포저블의 수명 주기와 그 상태를 관찰하고 유지하는 방법을 알아야 한다.
+
+<br>
+
+<h3>컴포저블의 수명 주기</h3>
+
+`Composable` 함수에는 액티비티의 수명 주기와 별개인 자체 수명 주기가 존재한다. **수명 주기는 컴포지션을 시작하고 0회 이상 재구성한 다음 컴포지션을 종료하는 이벤트**로 구성된다.
+
+1. 앱의 UI는 처음에 `Composition`이라는 프로세스에서 `Composable` 함수를 실행하여 빌드된다.
+2. 앱 상태가 변경되면 `Recomposition`이 예약된다. `Recomposition`은 상태가 변경되었을 수 있는 `Composable` 함수를 Compose에서 다시 실행하고 업데이트된 UI를 만드는 것을 의미한다. `Composition`은 이러한 변경사항을 반영하도록 업데이트된다.
+
+Compose에서 상태가 변하는 객체를 나타내기 위해서 `State` 또는 `MutableState`를 사용한다.
+```
+    var revenue = mutableStateOf(0)
+```
+
+`Recomposition` 중에 값을 유지하고 재사용하기 위해 `remember` API를 사용한다.
+```
+    var  revenue by remember { mutableStateOf(0) }
+```
+
+하지만 `remember`는 구성 변경 중에 상태 유지를 지원하지 않는다. Compose가 구성 변경 중에 상태를 유지하려면 `rememberSaveable`를 사용해야 한다.
+
+<br>
+
+<h3>rememberSaveable을 사용하여 구성 변경 시 값 저장</h3>
+
+`rememberSaveable`은 리컴포지션 및 구성 변경 중 값을 저장하는 기능을 제공한다.
+
+```
+var revenue by rememberSaveable { mutableStateOf(0) }
+...
+var currentDessertImageId by rememberSaveable {
+    mutableStateOf(desserts[currentDessertIndex].imageId)
+}
+```
+화면을 바꾸면 값들이 초기화되던 이전 상황과는 달리 `rememberSaveable`로 저장하는 값들은 초기화되지 않고 값을 유지하게 된다.
 
 </p>
 
